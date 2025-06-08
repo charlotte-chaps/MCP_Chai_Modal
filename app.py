@@ -9,6 +9,11 @@ import gemmi
 from gradio_molecule3d import Molecule3D
 from modal_app import app, chai1_inference, download_inference_dependencies, here
 
+theme = gr.themes.Default(
+    text_size="lg",
+    radius_size="lg",
+)
+
 # Definition of the tools for the MCP server 
 
 # Function to return a fasta file
@@ -45,6 +50,7 @@ def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
         f.write(fasta_content)
     
     return file_name
+
 
 # Function to create a JSON file
 def create_json_config(
@@ -151,23 +157,74 @@ def compute_Chai1(
 # Create the Gradio interface
 reps = [{"model": 0,"style": "cartoon","color": "hydrophobicity"}]
 
-with gr.Blocks() as demo:
+with gr.Blocks(theme=theme) as demo:
     
     gr.Markdown(
     """
-    # Protein Folding Simulation with Chai1
-    This interface allows you to run Chai1 simulations on a given Fasta sequence file.     
+    # Protein Folding Simulation Interface
+    This interface provides you the tools to fold any FASTA chain based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
     """) 
     
     with gr.Tab("Introduction 🔭"):
         
+        gr.Image("images/logo1.png", show_label=False,width=400)
+        
         gr.Markdown(
         """
-        ## Chai1 Simulation Interface
+        
+        # Stakes 
+        
+        The industry is being deeply changed by the development of LLMs and the recent possibilities to provide them access to external tools. 
+        For years now companies are using simulation tools in order faster and reduce the development cost of a product. 
+        One of the challenge in the coming years will be to create agents that can setup, run and process simulations to faster the development of new products.
+        
+        # Objective 
+        
+        This project is a first step in this creating AI agents that perform simulations on existing softwares. 
+        1) Several domains are of major interest: 
+        - CFD (Computational Fluid Dynamics) simulations
+        - Biology simulations (Protein Folding, Molecular Dynamics, etc.)
+        - All applications that use neural networks
+        
+        --> This project is focused on the protein folding domain, but the same principles can be applied to other domains.
+        
+        2) Generally, industrial computations are performed on HPC clusters, which have access to large ressources. 
+        
+        --> The simulation need to run on a separate server
+        
+        3) The LLM needs to be able to access the simulation results in order to provide a complete answer to the user.
+        
+        --> The simulation results need to be accessible by the LLM
+        
+        ## Modal
+        
+        Modal (https://modal.com/) is a serverless platform that provides a simple way to run any application with the latest CPU and GPU hardware.
+    
+        ## Chai-1 Model
+        
+        Chai-1 (https://www.chaidiscovery.com/blog/introducing-chai-1) is a multi-modal foundation model for molecular structure prediction that performs at the state-of-the-art across a variety of benchmarks. 
+        Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more.
+        Chai-1 use on Modal server is an example on how to run folding simulations. 
+        Thus, it is a good choice to start with. 
+        
+        # Work performed
         This interface allows you to run Chai1 simulations on a given Fasta sequence file.
         The Chai1 model is designed to predict the 3D structure of proteins based on their amino acid sequences.
         You can input a Fasta file containing the sequence of the molecule you want to simulate, and the output will be a 3D representation of the molecule based on the Chai1 model.
-        """)
+
+        You can input a Fasta file containing the sequence of the molecule you want to simulate.
+        The output will be a 3D representation of the molecule based on the Chai1 model.
+        
+        ## Instructions
+        1. Upload a Fasta sequence file containing the molecule sequence.
+        2. Click the "Run" button to start the simulation.
+        3. The output will be a 3D visualization of the molecule.
+        
+        # Disclaimer
+        This interface is for educational and research purposes only. The results may vary based on the input sequence and the Chai1 model's capabilities.
+        # Contact
+        For any issues or questions, please contact the developer or refer to the documentation.   
+        """) 
     
     with gr.Tab("Configuration 📦"):
         
@@ -186,31 +243,16 @@ with gr.Blocks() as demo:
                 text_output = gr.Textbox(placeholder="Fasta file name", label="Fasta file name")
                 text_button = gr.Button("Create Fasta file")
                 text_button.click(fn=create_fasta_file, inputs=[text_input], outputs=[text_output])
+                
+                gr.Markdown(
+                """
+                ## Example Fasta File
+                ```
+                >protein|name=example-protein
+                AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFD      
+                ```
+                """)
         
-
-        gr.Markdown(
-        """
-        You can input a Fasta file containing the sequence of the molecule you want to simulate.
-        The output will be a 3D representation of the molecule based on the Chai1 model.
-        ## Instructions
-        1. Upload a Fasta sequence file containing the molecule sequence.
-        2. Click the "Run" button to start the simulation.
-        3. The output will be a 3D visualization of the molecule.
-        ## Example Input
-        You can use the default Fasta file provided in the inputs directory, or upload your own.
-        ## Output
-        The output will be a 3D representation of the molecule, which you can interact with.
-        ## Note
-        Make sure to have the necessary dependencies installed and the Chai1 model available in the specified directory.
-        ## Disclaimer
-        This interface is for educational and research purposes only. The results may vary based on the input sequence and the Chai1 model's capabilities.
-        ## Contact
-        For any issues or questions, please contact the developer or refer to the documentation.
-        ## Example Fasta File
-        ```
-        >protein|name=example-protein
-        AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFD      
-        """) 
        
     with gr.Tab("Run folding simulation 🚀"): 
         inp1 = gr.Textbox(placeholder="Fasta Sequence file", label="Input Fasta file")
