@@ -1,0 +1,224 @@
+# Import librairies
+from pathlib import Path
+from typing import Optional
+from uuid import uuid4
+import hashlib
+import json
+import gradio as gr
+import gemmi
+from gradio_molecule3d import Molecule3D
+from modal_app import app, chai1_inference, download_inference_dependencies, here
+
+# Definition of the tools for the MCP server 
+
+# Function to return a fasta file
+def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
+    """Create a FASTA file from a protein sequence string with a unique name.
+    
+    Args:
+        sequence (str): The protein sequence string with optional line breaks
+        name (str, optional): The name/identifier for the sequence. Defaults to "PROTEIN"
+    
+    Returns:
+        str: Name of the created FASTA file
+    """
+    # Remove any trailing/leading whitespace but preserve line breaks
+    lines = sequence.strip().split('\n')
+    
+    # Check if the first line is a FASTA header
+    if not lines[0].startswith('>'):
+        # If no header provided, add one
+        if name is None:
+            name = "PROTEIN"
+        sequence = f">{name}\n{sequence}"
+    
+    # Create FASTA content (preserving line breaks)
+    fasta_content = sequence
+    
+    # Generate a unique file name
+    unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
+    file_name = f"chai1_{unique_id}_input.fasta"
+    file_path = here / "inputs" / file_name
+    
+    # Write the FASTA file
+    with open(file_path, "w") as f:
+        f.write(fasta_content)
+    
+    return file_name
+
+# Function to create a JSON file
+def create_json_config(
+    num_diffn_timesteps: int,
+    num_trunk_recycles: int,
+    seed: int,
+    options: list
+    ) -> str:
+    """Create a JSON configuration file from the Gradio interface inputs.
+    
+    Args:
+        num_diffn_timesteps (int): Number of diffusion timesteps from slider
+        num_trunk_recycles (int): Number of trunk recycles from slider
+        seed (int): Random seed from slider
+        options (list): List of selected options from checkbox group
+    
+    Returns:
+        str: Name of the created JSON file
+    """
+    # Convert checkbox options to boolean flags
+    use_esm_embeddings = "ESM_embeddings" in options
+    use_msa_server = "MSA_server" in options
+    
+    # Create config dictionary
+    config = {
+        "num_trunk_recycles": num_trunk_recycles,
+        "num_diffn_timesteps": num_diffn_timesteps,
+        "seed": seed,
+        "use_esm_embeddings": use_esm_embeddings,
+        "use_msa_server": use_msa_server
+    }
+    
+    # Generate a unique file name
+    unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
+    file_name = f"chai1_{unique_id}_config.json"
+    file_path = here / "inputs" / file_name
+    
+    # Write the JSON file
+    with open(file_path, "w") as f:
+        json.dump(config, f, indent=4)
+    
+    return file_name
+
+
+# Function to compute Chai1 inference
+def compute_Chai1(
+    fasta_file: Optional[str] = "",
+    inference_config_file: Optional[str] = "",
+):
+    """Compute a Chai1 simulation.
+
+    Args:
+        x (float | int): The number to square.
+
+    Returns:
+        float: The square of the input number.
+    """
+    with app.run():
+        
+        force_redownload = False
+        
+        print("🧬 checking inference dependencies")
+        download_inference_dependencies.remote(force=force_redownload)
+
+        # Define fasta file
+        if not fasta_file:
+            fasta_file = here / "inputs" / "chai1_default_input.fasta"   
+        print(f"🧬 running Chai inference on {fasta_file}")
+        fasta_file = here / "inputs" / fasta_file
+        print(fasta_file)
+        fasta_content = Path(fasta_file).read_text()
+
+        # Define inference config file
+        if not inference_config_file:
+            inference_config_file = here / "inputs" / "chai1_quick_inference.json"
+        inference_config_file = here / "inputs" / inference_config_file
+        print(f"🧬 loading Chai inference config from {inference_config_file}")
+        inference_config = json.loads(Path(inference_config_file).read_text())
+
+        # Generate a unique run ID
+        run_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]  # short id
+        print(f"🧬 running inference with {run_id=}")
+
+        results = chai1_inference.remote(fasta_content, inference_config, run_id)
+
+        # Define output directory
+        output_dir = Path("./results")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        print(f"🧬 saving results to disk locally in {output_dir}")
+        for ii, (scores, cif) in enumerate(results):
+            (Path(output_dir) / f"{run_id}-scores.model_idx_{ii}.npz").write_bytes(scores)
+            (Path(output_dir) / f"{run_id}-preds.model_idx_{ii}.cif").write_text(cif)
+        
+        # Take the last cif file and convert it to pdb
+        cif_name = str(output_dir)+"/"+str(run_id)+"-preds.model_idx_"+str(ii)+".cif"
+        pdb_name = cif_name.split('.cif')[0] + '.pdb'
+        st = gemmi.read_structure(cif_name)
+        st.write_minimal_pdb(pdb_name)
+        
+        return pdb_name
+
+
+# Create the Gradio interface
+reps = [{"model": 0,"style": "cartoon","color": "hydrophobicity"}]
+
+with gr.Blocks() as demo:
+    
+    gr.Markdown(
+    """
+    # Protein Folding Simulation with Chai1
+    This interface allows you to run Chai1 simulations on a given Fasta sequence file.     
+    """) 
+    
+    with gr.Tab("Introduction 🔭"):
+        
+        gr.Markdown(
+        """
+        ## Chai1 Simulation Interface
+        This interface allows you to run Chai1 simulations on a given Fasta sequence file.
+        The Chai1 model is designed to predict the 3D structure of proteins based on their amino acid sequences.
+        You can input a Fasta file containing the sequence of the molecule you want to simulate, and the output will be a 3D representation of the molecule based on the Chai1 model.
+        """)
+    
+    with gr.Tab("Configuration 📦"):
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                slider_nb = gr.Slider(1, 500, value=200, label="Number of diffusion time steps", info="Choose the number of diffusion time steps for the simulation", step=1, interactive=True, elem_id="num_iterations")
+                slider_trunk = gr.Slider(1, 5, value=3, label="Number of trunk recycles", info="Choose the number of iterations for the simulation", step=1, interactive=True, elem_id="trunk_number")
+                slider_seed = gr.Slider(1, 100, value=42, label="Seed", info="Choose the seed", step=1, interactive=True, elem_id="seed")
+                check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additionnal options", info="Options to use ESM embeddings and MSA server", elem_id="options")
+                json_output = gr.Textbox(placeholder="Config file name", label="Config file name")
+                button_json = gr.Button("Create Config file")
+                button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options], outputs=[json_output])
+                
+            with gr.Column(scale=1):   
+                text_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
+                text_output = gr.Textbox(placeholder="Fasta file name", label="Fasta file name")
+                text_button = gr.Button("Create Fasta file")
+                text_button.click(fn=create_fasta_file, inputs=[text_input], outputs=[text_output])
+        
+
+        gr.Markdown(
+        """
+        You can input a Fasta file containing the sequence of the molecule you want to simulate.
+        The output will be a 3D representation of the molecule based on the Chai1 model.
+        ## Instructions
+        1. Upload a Fasta sequence file containing the molecule sequence.
+        2. Click the "Run" button to start the simulation.
+        3. The output will be a 3D visualization of the molecule.
+        ## Example Input
+        You can use the default Fasta file provided in the inputs directory, or upload your own.
+        ## Output
+        The output will be a 3D representation of the molecule, which you can interact with.
+        ## Note
+        Make sure to have the necessary dependencies installed and the Chai1 model available in the specified directory.
+        ## Disclaimer
+        This interface is for educational and research purposes only. The results may vary based on the input sequence and the Chai1 model's capabilities.
+        ## Contact
+        For any issues or questions, please contact the developer or refer to the documentation.
+        ## Example Fasta File
+        ```
+        >protein|name=example-protein
+        AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFD      
+        """) 
+       
+    with gr.Tab("Run folding simulation 🚀"): 
+        inp1 = gr.Textbox(placeholder="Fasta Sequence file", label="Input Fasta file")
+        inp2 = gr.Textbox(placeholder="Config file", label="JSON Config file")
+        btn = gr.Button("Run")
+        out = Molecule3D(label="Molecule3D", reps=reps)
+        btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out])
+
+# Launch both the Gradio web interface and the MCP server
+if __name__ == "__main__":
+    demo.launch(mcp_server=True)
