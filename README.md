@@ -14,3 +14,17 @@ tags:
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
+### Environment creation with uv
+Run the following in a bash shell:
+```bash
+uv venv 
+source .venv/bin/activate
+uv pip install gradio[mcp] modal gemmi gradio_molecule3d 
+```
+
+### Run the app 
+Run in a bash shell: 
+```bash
+gradio app.py
+```
