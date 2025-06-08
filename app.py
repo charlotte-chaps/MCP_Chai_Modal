@@ -8,8 +8,41 @@ import gradio as gr
 import gemmi
 from gradio_molecule3d import Molecule3D
 from modal_app import app, chai1_inference, download_inference_dependencies, here
+from numpy import load
+from typing import List
 
 # Definition of the tools for the MCP server 
+
+
+def select_best_model(
+    run_id: str,
+    number_of_scores: int=5,
+    scores_to_print: List[str]=None,
+    results_dir: str="results",
+    prefix: str="-scores.model_idx_",
+):
+    print(f"🧬 Start reading scores for each inference...")
+    if scores_to_print is None:
+        scores_to_print = ["aggregate_score", "ptm", "iptm"]
+    max_aggregate_score = 0
+    best_model = None
+    for score in range(number_of_scores):
+        print(f"    🧬 Reading scores for model {score}...")
+        data = load(f"{results_dir}/{run_id}{prefix}{score}.npz")
+        if data["has_inter_chain_clashes"][0] == False:
+            for item in scores_to_print:
+                print(f"{item}: {data[item][0]}")
+        else:
+            print(f"        🧬 Model {score} has inter-chain clashes, skipping scores.")
+            continue
+        if data["aggregate_score"][0] > max_aggregate_score:
+            max_aggregate_score = data["aggregate_score"][0]
+            best_model = int(score)
+    print(
+        f"🧬 Best model is {best_model} with an aggregate score of {max_aggregate_score}."
+    )
+    return best_model, max_aggregate_score
+
 
 # Function to return a fasta file
 def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
@@ -139,8 +172,14 @@ def compute_Chai1(
             (Path(output_dir) / f"{run_id}-scores.model_idx_{ii}.npz").write_bytes(scores)
             (Path(output_dir) / f"{run_id}-preds.model_idx_{ii}.cif").write_text(cif)
         
+        best_model, max_aggregate_score = select_best_model(
+            run_id=run_id,
+            scores_to_print=["aggregate_score", "ptm", "iptm"],
+            number_of_scores=len(results),
+            results_dir=str(output_dir)
+        )
         # Take the last cif file and convert it to pdb
-        cif_name = str(output_dir)+"/"+str(run_id)+"-preds.model_idx_"+str(ii)+".cif"
+        cif_name = str(output_dir)+"/"+str(run_id)+"-preds.model_idx_"+str(best_model)+".cif"
         pdb_name = cif_name.split('.cif')[0] + '.pdb'
         st = gemmi.read_structure(cif_name)
         st.write_minimal_pdb(pdb_name)
