@@ -136,10 +136,13 @@ def compute_Chai1(
     """Compute a Chai1 simulation.
 
     Args:
-        x (float | int): The number to square.
+        fasta_file (str, optional): FASTA file name containing the protein sequence.
+            If not provided, uses the default input file.
+        inference_config_file (str, optional): JSON configuration file name for inference.
+            If not provided, uses the default quick inference configuration.
 
     Returns:
-        float: The square of the input number.
+        str: Output PDB file name containing the predicted structure.
     """
     with app.run():
         
