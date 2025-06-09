@@ -86,6 +86,36 @@ MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPDLNAAKSELDKAIGRNCNGVITKDEAEKLFNQDVDAAVRGILR
 ### 5. <span style="color:#2563eb;">View the 3D visualization of your molecule</span>
 </div>
 
+## Simulation parameters choice       
+If no config or fasta files are created, default values are chosen:
+- chai1_default_input.fasta
+- chai1_quick_inference.json
+
+The files content is diplayed at the bottom of the page.
+The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
+Please use chai1_default_inference.json to have a wonderful protein 😃.
+
+- chai1_default_input.fasta
+```
+>protein|name=example-of-long-protein
+AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFDSDAASPRGEPRAPWVEQEGPEYWDRETQKYKRQAQTDRVSLRNLRGYYNQSEAGSHTLQWMFGCDLGPDGRLLRGYDQSAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGTCVEWLRRYLENGKETLQRAEHPKTHVTHHPVSDHEATLRCWALGFYPAEITLTWQWDGEDQTQDTELVETRPAGDGTFQKWAAVVVPSGEEQRYTCHVQHEGLPEPLTLRWEP
+>protein|name=example-of-short-protein
+AIQRTPKIQVYSRHPAENGKSNFLNCYVSGFHPSDIEVDLLKNGERIEKVEHSDLSFSKDWSFYLLYYTEFTPTEKDEYACRVNHVTLSQPKIVKWDRDM
+>protein|name=example-peptide
+GAAL
+>ligand|name=example-ligand-as-smiles
+CCCCCCCCCCCCCC(=O)O
+```
+- chai1_quick_inference.json
+```json
+{
+    "num_trunk_recycles": 1,
+    "num_diffn_timesteps": 10,
+    "seed": 42,
+    "use_esm_embeddings": true
+    "use_msa_server": false
+}
+```
 
 # Work Performed
 This interface allows you to run Chai1 simulations on a given FASTA sequence file. The Chai1 model predicts the 3D structure of proteins based on their amino acid sequences. You can input a FASTA file containing the sequence of the molecule you want to simulate, and the output will be a 3D representation of the molecule based on the Chai1 model.
