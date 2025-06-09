@@ -68,29 +68,34 @@ def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: O
     
     Args:
         file_content (str): The content of the FASTA file required with optional line breaks
-        name (str, optional): Name to use for the FASATA file. If not provided, a unique ID will be generated
+        name (str, optional): FASTA file name ending with .fasta ideally. If not provided, a unique ID will be generated
         seq_name (str, optional): The name/identifier for the sequence. Defaults to "protein"
         
     
     Returns:
         str: Name of the created FASTA file
     """
+    # If the file_content is empty, raise an error
+    if not file_content.strip():
+        print("Fasta file content cannot be empty so the example fasta file will be used")
+        file_content = ">protein|name=example-protein\nAGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFD"
+    
     # Remove any trailing/leading whitespace but preserve line breaks
-    lines = sequence.strip().split('\n')
+    lines = file_content.strip().split('\n')
     
     # Check if the first line is a FASTA header
     if not lines[0].startswith('>'):
         # If no header provided, add one
         if seq_name is None:
             seq_name = "protein"
-        sequence = f">{seq_name}\n{sequence}"
+        file_content = f">{seq_name}\n{file_content}"
     
     # Create FASTA content (preserving line breaks)
-    fasta_content = sequence
+    fasta_content = file_content
     
     # Generate a unique file name
     unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"chai1_{name if name else unique_id}_input.fasta"
+    file_name = f"{name if name else unique_id}"
     file_path = here / "inputs/fasta" / file_name
     
     # Write the FASTA file
@@ -113,7 +118,7 @@ def create_json_config(
         num_trunk_recycles (int): Number of trunk recycles from slider
         seed (int): Random seed from slider
         options (list): List of selected options from checkbox group
-        name (str, optional): Name to use for the config file. If not provided, a unique ID will be generated
+        name (str, optional): JSON config file name ending with .json ideally. If not provided, a unique ID will be generated
     
     Returns:
         str: Name of the created JSON file
@@ -132,7 +137,7 @@ def create_json_config(
     }
     
     # Generate file name based on provided name or unique ID
-    file_name = f"chai1_{name if name else hashlib.sha256(uuid4().bytes).hexdigest()[:8]}_config.json"
+    file_name = f"{name if name else hashlib.sha256(uuid4().bytes).hexdigest()[:8]}"
     file_path = here / "inputs/config" / file_name
     
     # Write the JSON file 
@@ -231,11 +236,8 @@ def plot_protein(result_df) -> str:
     if result_df.empty:
         return ""  # Return empty string instead of None for type safety
     
-    print(result_df)
-    print(result_df.iloc[0]["CIF File"])
     # Get the CIF file path of the model with highest aggregate score (already sorted)
     best_cif = str(Path("results/molecules") / result_df.iloc[0]["CIF File"])
-    print(best_cif)
     
     # Generate PDB file name
     pdb_file = best_cif.replace('.cif', '.pdb')
@@ -246,6 +248,28 @@ def plot_protein(result_df) -> str:
         st.write_minimal_pdb(pdb_file)
     
     return pdb_file
+
+# Function to plot a CIF file
+def show_cif_file(cif_file):
+    """Plot a 3D structure from a CIF file with the Molecule3D library.
+
+    Args:
+        cif_file: A protein structure file in CIF format. This can be a file uploaded by the user.
+            If None, the function will return None.
+
+    Returns:
+        str or None: PDB file name if successful, None if no file was provided
+            or if conversion failed.
+    """
+    if not cif_file:
+        return None
+    
+    cif_path = Path(cif_file.name)
+    st = gemmi.read_structure(str(cif_path))
+    pdb_file = cif_path.with_suffix('.pdb')
+    st.write_minimal_pdb(str(pdb_file))  # Convert PosixPath to string
+    
+    return str(pdb_file)
 
 # Create the Gradio interface
 reps = [{"model": 0,"style": "cartoon","color": "hydrophobicity"}]
@@ -280,14 +304,14 @@ with gr.Blocks(theme=theme) as demo:
                 slider_trunk = gr.Slider(1, 5, value=3, label="Number of trunk recycles", info="Choose the number of iterations for the simulation", step=1, interactive=True, elem_id="trunk_number")
                 slider_seed = gr.Slider(1, 100, value=42, label="Seed", info="Choose the seed", step=1, interactive=True, elem_id="seed")
                 check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additional options", info="Options to use ESM embeddings and MSA server", elem_id="options")
-                config_name = gr.Textbox(placeholder="Enter a name for the config (optional)", label="Configuration name")
+                config_name = gr.Textbox(placeholder="Enter a name for the json file (optional)", label="JSON file name")
                 button_json = gr.Button("Create Config file")
                 button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options, config_name], outputs=[])
         
                 
             with gr.Column(scale=1):   
                 fasta_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
-                fasta_name = gr.Textbox(placeholder="Enter the name of the fasta sequence (optional)", label="Fasta sequence name")
+                fasta_name = gr.Textbox(placeholder="Enter the name of the fasta file name (optional)", label="Fasta file name")
                 fasta_button = gr.Button("Create Fasta file")
                 fasta_button.click(fn=create_fasta_file, inputs=[fasta_input, fasta_name], outputs=[])
                         
@@ -307,15 +331,13 @@ with gr.Blocks(theme=theme) as demo:
                 inp1 = gr.FileExplorer(root_dir=here / "inputs/fasta", 
                                 value="chai1_default_input.fasta",
                                 label="Input Fasta file", 
-                                file_count='single',
-                                glob="*.fasta")     
+                                file_count='single')     
                 
             with gr.Column(scale=1):
                 inp2 = gr.FileExplorer(root_dir=here / "inputs/config", 
                                 value="chai1_quick_inference.json",
                                 label="Configuration file", 
-                                file_count='single',
-                                glob="*.json")    
+                                file_count='single')    
         btn_refresh = gr.Button("Refresh available files")
         
         # Only workaround I found to update the file explorer
@@ -343,7 +365,18 @@ with gr.Blocks(theme=theme) as demo:
             inputs=out, 
             outputs=out2
         )
+    
+    
+    with gr.Tab("Show protein from a cif file 💻"):     
         
+        gr.Markdown(
+        """
+        ## Plot a 3D structure from a CIF file
+        """)
+        
+        cif_input = gr.File(label="Input CIF file", file_count='single')
+        cif_output = Molecule3D(label="Plot the 3D Molecule", reps=reps)        
+        cif_input.change(fn=show_cif_file, inputs=cif_input, outputs=cif_output)
 
 # Launch both the Gradio web interface and the MCP server
 if __name__ == "__main__":
