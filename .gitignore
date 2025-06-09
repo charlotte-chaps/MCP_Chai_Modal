@@ -1,5 +1,6 @@
 # Specifics
-results/
+results/molecules/
+results/score/
 inputs/
 mcp.json
 
