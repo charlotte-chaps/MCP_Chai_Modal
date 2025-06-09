@@ -21,7 +21,7 @@ def select_best_model(
     run_id: str,
     number_of_scores: int=5,
     scores_to_print: List[str]=None,
-    results_dir: str="results",
+    results_dir: str="results/score",
     prefix: str="-scores.model_idx_",
 ):
     """
@@ -31,7 +31,7 @@ def select_best_model(
         run_id (str): Unique identifier for the inference run.
         number_of_scores (int, optional): Number of models to evaluate (number of score files to read). Default is 5.
         scores_to_print (List[str], optional): List of score names to display for each model (e.g., ["aggregate_score", "ptm", "iptm"]). Default is ["aggregate_score", "ptm", "iptm"].
-        results_dir (str, optional): Directory where the result files are located. Default is "results".
+        results_dir (str, optional): Directory where the result files are located. Default is "results/score".
         prefix (str, optional): Prefix used in the score file names. Default is "-scores.model_idx_".
 
     Returns:
@@ -63,12 +63,14 @@ def select_best_model(
 
 # Definition of the tools for the MCP server 
 # Function to return a fasta file
-def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
+def create_fasta_file(sequence: str, name: Optional[str] = None, seq_name: Optional[str] = None) -> str:
     """Create a FASTA file from a protein sequence string with a unique name.
     
     Args:
         sequence (str): The protein sequence string with optional line breaks
-        name (str, optional): The name/identifier for the sequence. Defaults to "PROTEIN"
+        name (str, optional): Name to use for the FASATA file. If not provided, a unique ID will be generated
+        seq_name (str, optional): The name/identifier for the sequence. Defaults to "PROTEIN"
+        
     
     Returns:
         str: Name of the created FASTA file
@@ -79,23 +81,21 @@ def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
     # Check if the first line is a FASTA header
     if not lines[0].startswith('>'):
         # If no header provided, add one
-        if name is None:
-            name = "PROTEIN"
-        sequence = f">{name}\n{sequence}"
+        if seq_name is None:
+            seq_name = "PROTEIN"
+        sequence = f">{seq_name}\n{sequence}"
     
     # Create FASTA content (preserving line breaks)
     fasta_content = sequence
     
     # Generate a unique file name
     unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"chai1_{unique_id}_input.fasta"
-    file_path = here / "inputs" / file_name
+    file_name = f"chai1_{name if name else unique_id}_input.fasta"
+    file_path = here / "inputs/fasta" / file_name
     
     # Write the FASTA file
     with open(file_path, "w") as f:
         f.write(fasta_content)
-    
-    return file_name
 
 
 # Function to create a JSON file
@@ -103,7 +103,8 @@ def create_json_config(
     num_diffn_timesteps: int,
     num_trunk_recycles: int,
     seed: int,
-    options: list
+    options: list,
+    name: Optional[str] = None
     ) -> str:
     """Create a JSON configuration file from the Gradio interface inputs.
     
@@ -112,6 +113,7 @@ def create_json_config(
         num_trunk_recycles (int): Number of trunk recycles from slider
         seed (int): Random seed from slider
         options (list): List of selected options from checkbox group
+        name (str, optional): Name to use for the config file. If not provided, a unique ID will be generated
     
     Returns:
         str: Name of the created JSON file
@@ -129,16 +131,13 @@ def create_json_config(
         "use_msa_server": use_msa_server
     }
     
-    # Generate a unique file name
-    unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"chai1_{unique_id}_config.json"
-    file_path = here / "inputs" / file_name
+    # Generate file name based on provided name or unique ID
+    file_name = f"chai1_{name if name else hashlib.sha256(uuid4().bytes).hexdigest()[:8]}_config.json"
+    file_path = here / "inputs/config" / file_name
     
-    # Write the JSON file
+    # Write the JSON file 
     with open(file_path, "w") as f:
         json.dump(config, f, indent=4)
-    
-    return file_name
 
 
 # Function to compute Chai1 inference
@@ -166,16 +165,16 @@ def compute_Chai1(
 
         # Define fasta file
         if not fasta_file:
-            fasta_file = here / "inputs" / "chai1_default_input.fasta"   
+            fasta_file = here / "inputs/fasta" / "chai1_default_input.fasta"   
         print(f"🧬 running Chai inference on {fasta_file}")
-        fasta_file = here / "inputs" / fasta_file
+        fasta_file = here / "inputs/fasta" / fasta_file
         print(fasta_file)
         fasta_content = Path(fasta_file).read_text()
 
         # Define inference config file
         if not inference_config_file:
-            inference_config_file = here / "inputs" / "chai1_quick_inference.json"
-        inference_config_file = here / "inputs" / inference_config_file
+            inference_config_file = here / "inputs/config" / "chai1_quick_inference.json"
+        inference_config_file = here / "inputs/config" / inference_config_file
         print(f"🧬 loading Chai inference config from {inference_config_file}")
         inference_config = json.loads(Path(inference_config_file).read_text())
 
@@ -191,17 +190,17 @@ def compute_Chai1(
 
         print(f"🧬 saving results to disk locally in {output_dir}")
         for ii, (scores, cif) in enumerate(results):
-            (Path(output_dir) / f"{run_id}-scores.model_idx_{ii}.npz").write_bytes(scores)
-            (Path(output_dir) / f"{run_id}-preds.model_idx_{ii}.cif").write_text(cif)
+            (Path(output_dir, "score") / f"{run_id}-scores.model_idx_{ii}.npz").write_bytes(scores)
+            (Path(output_dir, "molecules") / f"{run_id}-preds.model_idx_{ii}.cif").write_text(cif)
         
         best_model, max_aggregate_score = select_best_model(
             run_id=run_id,
             scores_to_print=["aggregate_score", "ptm", "iptm"],
             number_of_scores=len(results),
-            results_dir=str(output_dir)
+            results_dir=str(Path(output_dir, "score"))
         )
         # Take the last cif file and convert it to pdb
-        cif_name = str(output_dir)+"/"+str(run_id)+"-preds.model_idx_"+str(best_model)+".cif"
+        cif_name = str(Path(output_dir, "molecules"))+"/"+str(run_id)+"-preds.model_idx_"+str(best_model)+".cif"
         pdb_name = cif_name.split('.cif')[0] + '.pdb'
         st = gemmi.read_structure(cif_name)
         st.write_minimal_pdb(pdb_name)
@@ -267,6 +266,37 @@ with gr.Blocks(theme=theme) as demo:
         2. Click the "Run" button to start the simulation.
         3. The output will be a 3D visualization of the molecule.
         
+        ## Simulation parameters choice       
+        If no config or fasta files are created, default values are chosen:
+        - chai1_default_input.fasta
+        - chai1_quick_inference.json
+        
+        The files content is diplayed at the bottom of the page.
+        The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
+        Please use chai1_default_inference.json to have a wonderful protein 😃.
+        
+        - chai1_default_input.fasta
+        ```
+        >protein|name=example-of-long-protein
+        AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFDSDAASPRGEPRAPWVEQEGPEYWDRETQKYKRQAQTDRVSLRNLRGYYNQSEAGSHTLQWMFGCDLGPDGRLLRGYDQSAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGTCVEWLRRYLENGKETLQRAEHPKTHVTHHPVSDHEATLRCWALGFYPAEITLTWQWDGEDQTQDTELVETRPAGDGTFQKWAAVVVPSGEEQRYTCHVQHEGLPEPLTLRWEP
+        >protein|name=example-of-short-protein
+        AIQRTPKIQVYSRHPAENGKSNFLNCYVSGFHPSDIEVDLLKNGERIEKVEHSDLSFSKDWSFYLLYYTEFTPTEKDEYACRVNHVTLSQPKIVKWDRDM
+        >protein|name=example-peptide
+        GAAL
+        >ligand|name=example-ligand-as-smiles
+        CCCCCCCCCCCCCC(=O)O
+        ```
+        - chai1_quick_inference.json
+        ```json
+        {
+            "num_trunk_recycles": 1,
+            "num_diffn_timesteps": 10,
+            "seed": 42,
+            "use_esm_embeddings": true
+            "use_msa_server": false
+        }
+        ```
+        
         # Work performed
         This interface allows you to run Chai1 simulations on a given Fasta sequence file.
         The Chai1 model is designed to predict the 3D structure of proteins based on their amino acid sequences.
@@ -295,16 +325,16 @@ with gr.Blocks(theme=theme) as demo:
                 slider_trunk = gr.Slider(1, 5, value=3, label="Number of trunk recycles", info="Choose the number of iterations for the simulation", step=1, interactive=True, elem_id="trunk_number")
                 slider_seed = gr.Slider(1, 100, value=42, label="Seed", info="Choose the seed", step=1, interactive=True, elem_id="seed")
                 check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additionnal options", info="Options to use ESM embeddings and MSA server", elem_id="options")
-                json_output = gr.Textbox(placeholder="Config file name", label="Config file name")
+                config_name = gr.Textbox(placeholder="Enter a name for the config (optional)", label="Configuration file name")
                 button_json = gr.Button("Create Config file")
-                button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options], outputs=[json_output])
+                button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options, config_name], outputs=[])
         
                 
             with gr.Column(scale=1):   
                 fasta_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
-                fasta_output = gr.Textbox(placeholder="Fasta file name", label="Fasta file name")
+                fasta_name = gr.Textbox(placeholder="Enter a name for the fasta file (optional)", label="Fasta file name")
                 fasta_button = gr.Button("Create Fasta file")
-                fasta_button.click(fn=create_fasta_file, inputs=[fasta_input], outputs=[fasta_output])
+                fasta_button.click(fn=create_fasta_file, inputs=[fasta_input, fasta_name], outputs=[])
                         
                 gr.Markdown(
                 """
@@ -314,50 +344,35 @@ with gr.Blocks(theme=theme) as demo:
                 AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFD      
                 ```
                 """)
-        
-        gr.Markdown(
-        """        
-        ## Simulation parameters choice       
-        If no config or fasta files are created, default values are chosen:
-        - chai1_default_input.fasta
-        - chai1_quick_inference.json
-        
-        The files content is diplayed at the bottom of the page.
-        The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
-        Please use chai1_default_inference.json to have a wonderful protein 😃.
-        """)
-        
-        inp1 = gr.Textbox(placeholder="Fasta Sequence file (default: chai1_default_input.fasta)", label="Input Fasta file")
-        inp2 = gr.Textbox(placeholder="Config file (default: chai1_quick_inference.json)", label="JSON Config file")
        
-        gr.Markdown(
-        """        
-        - chai1_default_input.fasta
-        ```
-        >protein|name=example-of-long-protein
-        AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFDSDAASPRGEPRAPWVEQEGPEYWDRETQKYKRQAQTDRVSLRNLRGYYNQSEAGSHTLQWMFGCDLGPDGRLLRGYDQSAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGTCVEWLRRYLENGKETLQRAEHPKTHVTHHPVSDHEATLRCWALGFYPAEITLTWQWDGEDQTQDTELVETRPAGDGTFQKWAAVVVPSGEEQRYTCHVQHEGLPEPLTLRWEP
-        >protein|name=example-of-short-protein
-        AIQRTPKIQVYSRHPAENGKSNFLNCYVSGFHPSDIEVDLLKNGERIEKVEHSDLSFSKDWSFYLLYYTEFTPTEKDEYACRVNHVTLSQPKIVKWDRDM
-        >protein|name=example-peptide
-        GAAL
-        >ligand|name=example-ligand-as-smiles
-        CCCCCCCCCCCCCC(=O)O
-        ```
-        - chai1_quick_inference.json
-        ```json
-        {
-            "num_trunk_recycles": 1,
-            "num_diffn_timesteps": 10,
-            "seed": 42,
-            "use_esm_embeddings": true
-            "use_msa_server": false
-        }
-        ```
-        """)
        
-    with gr.Tab("Run folding simulation 🚀"):                   
-        btn = gr.Button("Run")
+    with gr.Tab("Run folding simulation 🚀"):     
+        with gr.Row():
+            with gr.Column(scale=1):
+                inp1 = gr.FileExplorer(root_dir=here / "inputs/fasta", 
+                                value="chai1_default_input.fasta",
+                                label="Input Fasta file", 
+                                file_count='single',
+                                glob="*.fasta")     
+                
+            with gr.Column(scale=1):
+                inp2 = gr.FileExplorer(root_dir=here / "inputs/config", 
+                                value="chai1_quick_inference.json",
+                                label="Configuration file", 
+                                file_count='single',
+                                glob="*.json")    
+        btn_refresh = gr.Button("Refresh available files")
+        
+        # Only workaround I found to update the file explorer
+        def update_file_explorer():
+            return gr.FileExplorer(root_dir=here), gr.FileExplorer(root_dir=here)
+        def update_file_explorer_2():
+            return gr.FileExplorer(root_dir=here / "inputs/fasta"), gr.FileExplorer(root_dir=here / "inputs/config")
+        
+        btn_refresh.click(update_file_explorer, outputs=[inp1,inp2]).then(update_file_explorer_2, outputs=[inp1, inp2])
+                      
         out = Molecule3D(label="Plot the 3D Molecule", reps=reps)
+        btn = gr.Button("Run")
         btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out])
         
 
