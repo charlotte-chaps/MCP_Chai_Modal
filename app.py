@@ -16,9 +16,7 @@ theme = gr.themes.Default(
     radius_size="lg",
 )
 
-# Definition of the tools for the MCP server 
-
-
+# Helper functions
 def select_best_model(
     run_id: str,
     number_of_scores: int=5,
@@ -26,29 +24,44 @@ def select_best_model(
     results_dir: str="results",
     prefix: str="-scores.model_idx_",
 ):
+    """
+    Selects the best model based on the aggregate score among several simulation results.
+
+    Args:
+        run_id (str): Unique identifier for the inference run.
+        number_of_scores (int, optional): Number of models to evaluate (number of score files to read). Default is 5.
+        scores_to_print (List[str], optional): List of score names to display for each model (e.g., ["aggregate_score", "ptm", "iptm"]). Default is ["aggregate_score", "ptm", "iptm"].
+        results_dir (str, optional): Directory where the result files are located. Default is "results".
+        prefix (str, optional): Prefix used in the score file names. Default is "-scores.model_idx_".
+
+    Returns:
+        Tuple[int, float]: 
+            - best_model (int): Index of the best model (the one with the highest aggregate score and without inter-chain clashes).
+            - max_aggregate_score (float): Value of the highest aggregate score.
+    """
     print(f"🧬 Start reading scores for each inference...")
     if scores_to_print is None:
         scores_to_print = ["aggregate_score", "ptm", "iptm"]
     max_aggregate_score = 0
     best_model = None
-    for score in range(number_of_scores):
-        print(f"    🧬 Reading scores for model {score}...")
-        data = load(f"{results_dir}/{run_id}{prefix}{score}.npz")
+    for model_index in range(number_of_scores):
+        print(f"    🧬 Reading scores for model {model_index}...")
+        data = load(f"{results_dir}/{run_id}{prefix}{model_index}.npz")
         if data["has_inter_chain_clashes"][0] == False:
             for item in scores_to_print:
                 print(f"{item}: {data[item][0]}")
         else:
-            print(f"        🧬 Model {score} has inter-chain clashes, skipping scores.")
+            print(f"        🧬 Model {model_index} has inter-chain clashes, skipping scores.")
             continue
         if data["aggregate_score"][0] > max_aggregate_score:
             max_aggregate_score = data["aggregate_score"][0]
-            best_model = int(score)
+            best_model = int(model_index)
     print(
         f"🧬 Best model is {best_model} with an aggregate score of {max_aggregate_score}."
     )
     return best_model, max_aggregate_score
 
-
+# Definition of the tools for the MCP server 
 # Function to return a fasta file
 def create_fasta_file(sequence: str, name: Optional[str] = None) -> str:
     """Create a FASTA file from a protein sequence string with a unique name.
