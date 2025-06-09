@@ -63,11 +63,11 @@ def select_best_model(
 
 # Definition of the tools for the MCP server 
 # Function to return a fasta file
-def create_fasta_file(sequence: str, name: Optional[str] = None, seq_name: Optional[str] = None) -> str:
+def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: Optional[str] = None) -> str:
     """Create a FASTA file from a protein sequence string with a unique name.
     
     Args:
-        sequence (str): The protein sequence string with optional line breaks
+        file_content (str): The content of the FASTA file required with optional line breaks
         name (str, optional): Name to use for the FASATA file. If not provided, a unique ID will be generated
         seq_name (str, optional): The name/identifier for the sequence. Defaults to "protein"
         
@@ -142,43 +142,43 @@ def create_json_config(
 
 # Function to compute Chai1 inference
 def compute_Chai1(
-    fasta_file: Optional[str] = "",
-    inference_config_file: Optional[str] = "",
+    fasta_file_name: Optional[str] = "",
+    inference_config_file_name: Optional[str] = "",
 ):
     """Compute a Chai1 simulation.
 
     Args:
-        fasta_file (str, optional): FASTA file name containing the protein sequence.
+        fasta_file_name (str, optional): FASTA file name to use for the Chai1 simulation.
             If not provided, uses the default input file.
-        inference_config_file (str, optional): JSON configuration file name for inference.
+        inference_config_file_name (str, optional): JSON configuration file name for inference.
             If not provided, uses the default quick inference configuration.
 
     Returns:
-        str: Output PDB file name containing the predicted structure.
+        pd.DataFrame: DataFrame containing model scores and CIF file paths
     """
+    import pandas as pd
     with app.run():
-        
         force_redownload = False
         
         print("🧬 checking inference dependencies")
         download_inference_dependencies.remote(force=force_redownload)
 
-        # Define fasta file
-        if not fasta_file:
-            fasta_file = here / "inputs/fasta" / "chai1_default_input.fasta"   
-        print(f"🧬 running Chai inference on {fasta_file}")
-        fasta_file = here / "inputs/fasta" / fasta_file
-        print(fasta_file)
-        fasta_content = Path(fasta_file).read_text()
+        # Define fasta file
+        if not fasta_file_name:
+            fasta_file_name = here / "inputs/fasta" / "chai1_default_input.fasta"   
+        print(f"🧬 running Chai inference on {fasta_file_name}")
+        fasta_file_name = here / "inputs/fasta" / fasta_file_name
+        print(fasta_file_name)
+        fasta_content = Path(fasta_file_name).read_text()
 
         # Define inference config file
-        if not inference_config_file:
-            inference_config_file = here / "inputs/config" / "chai1_quick_inference.json"
-        inference_config_file = here / "inputs/config" / inference_config_file
-        print(f"🧬 loading Chai inference config from {inference_config_file}")
-        inference_config = json.loads(Path(inference_config_file).read_text())
+        if not inference_config_file_name:
+            inference_config_file_name = here / "inputs/config" / "chai1_quick_inference.json"
+        inference_config_file_name = here / "inputs/config" / inference_config_file_name
+        print(f"🧬 loading Chai inference config from {inference_config_file_name}")
+        inference_config = json.loads(Path(inference_config_file_name).read_text())
 
-        # Generate a unique run ID
+        # Generate a unique run ID
         run_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]  # short id
         print(f"🧬 running inference with {run_id=}")
 
@@ -189,24 +189,63 @@ def compute_Chai1(
         output_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"🧬 saving results to disk locally in {output_dir}")
+        
+        # Create lists to store data for DataFrame
+        model_data = []
+        
         for ii, (scores, cif) in enumerate(results):
-            (Path(output_dir, "score") / f"{run_id}-scores.model_idx_{ii}.npz").write_bytes(scores)
-            (Path(output_dir, "molecules") / f"{run_id}-preds.model_idx_{ii}.cif").write_text(cif)
+            score_file = Path(output_dir, "score") / f"{run_id}-scores.model_idx_{ii}.npz"
+            cif_file = Path(output_dir, "molecules") / f"{run_id}-preds.model_idx_{ii}.cif"
+            
+            score_file.write_bytes(scores)
+            cif_file.write_text(cif)
+            
+            # Load score data
+            data = load(str(score_file))
+            
+            if not data["has_inter_chain_clashes"][0]:
+                model_data.append({
+                    "Model Index": ii,
+                    "Aggregate Score": float(data["aggregate_score"][0]),
+                    "PTM": float(data["ptm"][0]),
+                    "IPTM": float(data["iptm"][0]),
+                    "CIF File": str(cif_file).split("/")[-1],  # Get just the file name
+                })
         
-        best_model, max_aggregate_score = select_best_model(
-            run_id=run_id,
-            scores_to_print=["aggregate_score", "ptm", "iptm"],
-            number_of_scores=len(results),
-            results_dir=str(Path(output_dir, "score"))
-        )
-        # Take the last cif file and convert it to pdb
-        cif_name = str(Path(output_dir, "molecules"))+"/"+str(run_id)+"-preds.model_idx_"+str(best_model)+".cif"
-        pdb_name = cif_name.split('.cif')[0] + '.pdb'
-        st = gemmi.read_structure(cif_name)
-        st.write_minimal_pdb(pdb_name)
+        # Create DataFrame from collected data
+        results_df = pd.DataFrame(model_data).sort_values("Aggregate Score", ascending=False)
         
-        return pdb_name
+        return results_df
 
+
+# Function to plot the 3D protein structure
+def plot_protein(result_df) -> str:
+    """Plot the 3D structure of a protein using the DataFrame from compute_Chai1.
+
+    Args:
+        result_df (pd.DataFrame): DataFrame containing model information and scores
+
+    Returns:
+        str: Path to the generated PDB file of the best model.
+    """
+    if result_df.empty:
+        return ""  # Return empty string instead of None for type safety
+    
+    print(result_df)
+    print(result_df.iloc[0]["CIF File"])
+    # Get the CIF file path of the model with highest aggregate score (already sorted)
+    best_cif = str(Path("results/molecules") / result_df.iloc[0]["CIF File"])
+    print(best_cif)
+    
+    # Generate PDB file name
+    pdb_file = best_cif.replace('.cif', '.pdb')
+    
+    # Convert CIF to PDB if it doesn't exist
+    if not Path(pdb_file).exists():
+        st = gemmi.read_structure(best_cif)
+        st.write_minimal_pdb(pdb_file)
+    
+    return pdb_file
 
 # Create the Gradio interface
 reps = [{"model": 0,"style": "cartoon","color": "hydrophobicity"}]
@@ -232,7 +271,7 @@ with gr.Blocks(theme=theme) as demo:
         
         gr.Markdown(
         """        
-        ## Fasta file and configuration generator
+        ## Fasta file and configuration generator (optional)
         """)
         
         with gr.Row():
@@ -240,15 +279,15 @@ with gr.Blocks(theme=theme) as demo:
                 slider_nb = gr.Slider(1, 500, value=300, label="Number of diffusion time steps", info="Choose the number of diffusion time steps for the simulation", step=1, interactive=True, elem_id="num_iterations")
                 slider_trunk = gr.Slider(1, 5, value=3, label="Number of trunk recycles", info="Choose the number of iterations for the simulation", step=1, interactive=True, elem_id="trunk_number")
                 slider_seed = gr.Slider(1, 100, value=42, label="Seed", info="Choose the seed", step=1, interactive=True, elem_id="seed")
-                check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additionnal options", info="Options to use ESM embeddings and MSA server", elem_id="options")
-                config_name = gr.Textbox(placeholder="Enter a name for the config (optional)", label="Configuration file name")
+                check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additional options", info="Options to use ESM embeddings and MSA server", elem_id="options")
+                config_name = gr.Textbox(placeholder="Enter a name for the config (optional)", label="Configuration name")
                 button_json = gr.Button("Create Config file")
                 button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options, config_name], outputs=[])
         
                 
             with gr.Column(scale=1):   
                 fasta_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
-                fasta_name = gr.Textbox(placeholder="Enter a name for the fasta file (optional)", label="Fasta file name")
+                fasta_name = gr.Textbox(placeholder="Enter the name of the fasta sequence (optional)", label="Fasta sequence name")
                 fasta_button = gr.Button("Create Fasta file")
                 fasta_button.click(fn=create_fasta_file, inputs=[fasta_input, fasta_name], outputs=[])
                         
@@ -281,15 +320,29 @@ with gr.Blocks(theme=theme) as demo:
         
         # Only workaround I found to update the file explorer
         def update_file_explorer():
+            """Don't need to be used by LLMs, but useful for the interface to update the file explorer"""
             return gr.FileExplorer(root_dir=here), gr.FileExplorer(root_dir=here)
         def update_file_explorer_2():
+            """Don't need to be used by LLMs, but useful for the interface to update the file explorer"""
             return gr.FileExplorer(root_dir=here / "inputs/fasta"), gr.FileExplorer(root_dir=here / "inputs/config")
         
         btn_refresh.click(update_file_explorer, outputs=[inp1,inp2]).then(update_file_explorer_2, outputs=[inp1, inp2])
                       
-        out = Molecule3D(label="Plot the 3D Molecule", reps=reps)
+        #out = Molecule3D(label="Plot the 3D Molecule", reps=reps)
+        out = gr.DataFrame(
+            headers=["Model Index", "Aggregate Score", "PTM", "IPTM", "CIF File"],
+            datatype=["number", "number", "number", "number", "str"],
+            label="Inference Results sorted by Aggregate Score",
+            visible=True,
+        )
+        out2 = Molecule3D(label="Plot the 3D Molecule", reps=reps)
+        
         btn = gr.Button("Run")
-        btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out])
+        btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out]).then(
+            fn=plot_protein, 
+            inputs=out, 
+            outputs=out2
+        )
         
 
 # Launch both the Gradio web interface and the MCP server
