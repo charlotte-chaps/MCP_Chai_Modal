@@ -281,6 +281,7 @@ with gr.Blocks(theme=theme) as demo:
         For any issues or questions, please contact the developer or refer to the documentation.   
         """) 
     
+    
     with gr.Tab("Configuration 📦"):
         
         with gr.Row():
@@ -309,7 +310,6 @@ with gr.Blocks(theme=theme) as demo:
                 ```
                 """)
         
-
        
     with gr.Tab("Run folding simulation 🚀"):    
         
