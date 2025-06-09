@@ -284,6 +284,11 @@ with gr.Blocks(theme=theme) as demo:
     
     with gr.Tab("Configuration 📦"):
         
+        gr.Markdown(
+        """        
+        ## Fasta file and configuration generator
+        """)
+        
         with gr.Row():
             with gr.Column(scale=1):
                 slider_nb = gr.Slider(1, 500, value=300, label="Number of diffusion time steps", info="Choose the number of diffusion time steps for the simulation", step=1, interactive=True, elem_id="num_iterations")
@@ -310,25 +315,21 @@ with gr.Blocks(theme=theme) as demo:
                 ```
                 """)
         
-       
-    with gr.Tab("Run folding simulation 🚀"):    
-        
         gr.Markdown(
         """        
+        ## Simulation parameters choice       
         If no config or fasta files are created, default values are chosen:
         - chai1_default_input.fasta
         - chai1_quick_inference.json
         
-        The files content is diplayed at the bottom of the page
-        The json configuration makes the computation fast (about 2min) but results can be disappointing. 
-        Please use chai1_default_inference.json to have a wonderful protein 😃
-        
+        The files content is diplayed at the bottom of the page.
+        The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
+        Please use chai1_default_inference.json to have a wonderful protein 😃.
         """)
-               
-        btn = gr.Button("Run")
-        out = Molecule3D(label="Molecule3D", reps=reps)
-        btn.click(fn=compute_Chai1, inputs=[fasta_output , json_output], outputs=[out])
         
+        inp1 = gr.Textbox(placeholder="Fasta Sequence file (default: chai1_default_input.fasta)", label="Input Fasta file")
+        inp2 = gr.Textbox(placeholder="Config file (default: chai1_quick_inference.json)", label="JSON Config file")
+       
         gr.Markdown(
         """        
         - chai1_default_input.fasta
@@ -353,6 +354,12 @@ with gr.Blocks(theme=theme) as demo:
         }
         ```
         """)
+       
+    with gr.Tab("Run folding simulation 🚀"):                   
+        btn = gr.Button("Run")
+        out = Molecule3D(label="Plot the 3D Molecule", reps=reps)
+        btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out])
+        
 
 # Launch both the Gradio web interface and the MCP server
 if __name__ == "__main__":
