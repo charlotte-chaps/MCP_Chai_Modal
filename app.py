@@ -359,7 +359,7 @@ with gr.Blocks(theme=theme) as demo:
         )
         out2 = Molecule3D(label="Plot the 3D Molecule", reps=reps)
         
-        btn = gr.Button("Run")
+        btn = gr.Button("Run Simulation")
         btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out]).then(
             fn=plot_protein, 
             inputs=out, 

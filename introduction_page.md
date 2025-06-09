@@ -15,15 +15,9 @@ This project is a first step in creating AI agents that perform simulations on e
 - **Biology** (Protein Folding, Molecular Dynamics, etc.)
 - **Neural network applications**
 
-> This project focuses on protein folding, but the same principles can be applied to other domains.
+This project focuses on protein folding, but the same principles can be applied to other domains. In particular it uses [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), which is a multi-modal foundation model for molecular structure prediction, performing at state-of-the-art levels across a variety of benchmarks. Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. Using Chai-1 on Modal is a great example of running folding simulations.
 
-Industrial computations are often performed on HPC clusters with large resources, so simulations typically run on separate servers. The LLM must be able to access simulation results to provide complete answers to users.
-
-## Modal
-[Modal](https://modal.com/) is a serverless platform that provides a simple way to run any application with the latest CPU and GPU hardware.
-
-## Chai-1 Model
-[Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1) is a multi-modal foundation model for molecular structure prediction, performing at state-of-the-art levels across a variety of benchmarks. Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. Using Chai-1 on Modal is a great example of running folding simulations.
+Industrial computations are often performed on HPC clusters with large resources, so simulations typically run on separate servers. The LLM must be able to access simulation results to provide complete answers to users. To this purpose, [Modal](https://modal.com/), a serverless platform that provides a simple way to run any application with the latest CPU and GPU hardware will be used.
 
 ---
 
@@ -95,17 +89,6 @@ The files content is diplayed at the bottom of the page.
 The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
 Please use chai1_default_inference.json to have a wonderful protein 😃.
 
-- chai1_default_input.fasta
-```
->protein|name=example-of-long-protein
-AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFDSDAASPRGEPRAPWVEQEGPEYWDRETQKYKRQAQTDRVSLRNLRGYYNQSEAGSHTLQWMFGCDLGPDGRLLRGYDQSAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGTCVEWLRRYLENGKETLQRAEHPKTHVTHHPVSDHEATLRCWALGFYPAEITLTWQWDGEDQTQDTELVETRPAGDGTFQKWAAVVVPSGEEQRYTCHVQHEGLPEPLTLRWEP
->protein|name=example-of-short-protein
-AIQRTPKIQVYSRHPAENGKSNFLNCYVSGFHPSDIEVDLLKNGERIEKVEHSDLSFSKDWSFYLLYYTEFTPTEKDEYACRVNHVTLSQPKIVKWDRDM
->protein|name=example-peptide
-GAAL
->ligand|name=example-ligand-as-smiles
-CCCCCCCCCCCCCC(=O)O
-```
 - chai1_quick_inference.json
 ```json
 {
@@ -116,12 +99,6 @@ CCCCCCCCCCCCCC(=O)O
     "use_msa_server": false
 }
 ```
-
-# Work Performed
-This interface allows you to run Chai1 simulations on a given FASTA sequence file. The Chai1 model predicts the 3D structure of proteins based on their amino acid sequences. You can input a FASTA file containing the sequence of the molecule you want to simulate, and the output will be a 3D representation of the molecule based on the Chai1 model.
-
-# Disclaimer
-This interface is for educational and research purposes only. Results may vary based on the input sequence and the Chai1 model's capabilities.
 
 # Contact
 For any issues or questions, please contact the developer or refer to the documentation.
