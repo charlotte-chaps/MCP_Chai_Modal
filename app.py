@@ -12,7 +12,7 @@ from numpy import load
 from typing import List
 
 theme = gr.themes.Default(
-    text_size="lg",
+    text_size="md",
     radius_size="lg",
 )
 
@@ -149,10 +149,13 @@ def compute_Chai1(
     """Compute a Chai1 simulation.
 
     Args:
-        x (float | int): The number to square.
+        fasta_file (str, optional): FASTA file name containing the protein sequence.
+            If not provided, uses the default input file.
+        inference_config_file (str, optional): JSON configuration file name for inference.
+            If not provided, uses the default quick inference configuration.
 
     Returns:
-        float: The square of the input number.
+        str: Output PDB file name containing the predicted structure.
     """
     with app.run():
         
@@ -259,6 +262,11 @@ with gr.Blocks(theme=theme) as demo:
         Chai-1 use on Modal server is an example on how to run folding simulations. 
         Thus, it is a good choice to start with. 
         
+        # Instructions
+        1. Upload a Fasta sequence file containing the molecule sequence.
+        2. Click the "Run" button to start the simulation.
+        3. The output will be a 3D visualization of the molecule.
+        
         # Work performed
         This interface allows you to run Chai1 simulations on a given Fasta sequence file.
         The Chai1 model is designed to predict the 3D structure of proteins based on their amino acid sequences.
@@ -267,35 +275,37 @@ with gr.Blocks(theme=theme) as demo:
         You can input a Fasta file containing the sequence of the molecule you want to simulate.
         The output will be a 3D representation of the molecule based on the Chai1 model.
         
-        ## Instructions
-        1. Upload a Fasta sequence file containing the molecule sequence.
-        2. Click the "Run" button to start the simulation.
-        3. The output will be a 3D visualization of the molecule.
-        
         # Disclaimer
         This interface is for educational and research purposes only. The results may vary based on the input sequence and the Chai1 model's capabilities.
         # Contact
         For any issues or questions, please contact the developer or refer to the documentation.   
         """) 
     
+    
     with gr.Tab("Configuration 📦"):
+        
+        gr.Markdown(
+        """        
+        ## Fasta file and configuration generator
+        """)
         
         with gr.Row():
             with gr.Column(scale=1):
-                slider_nb = gr.Slider(1, 500, value=200, label="Number of diffusion time steps", info="Choose the number of diffusion time steps for the simulation", step=1, interactive=True, elem_id="num_iterations")
+                slider_nb = gr.Slider(1, 500, value=300, label="Number of diffusion time steps", info="Choose the number of diffusion time steps for the simulation", step=1, interactive=True, elem_id="num_iterations")
                 slider_trunk = gr.Slider(1, 5, value=3, label="Number of trunk recycles", info="Choose the number of iterations for the simulation", step=1, interactive=True, elem_id="trunk_number")
                 slider_seed = gr.Slider(1, 100, value=42, label="Seed", info="Choose the seed", step=1, interactive=True, elem_id="seed")
                 check_options = gr.CheckboxGroup(["ESM_embeddings", "MSA_server"], value=["ESM_embeddings",], label="Additionnal options", info="Options to use ESM embeddings and MSA server", elem_id="options")
                 json_output = gr.Textbox(placeholder="Config file name", label="Config file name")
                 button_json = gr.Button("Create Config file")
                 button_json.click(fn=create_json_config, inputs=[slider_nb, slider_trunk, slider_seed, check_options], outputs=[json_output])
+        
                 
             with gr.Column(scale=1):   
-                text_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
-                text_output = gr.Textbox(placeholder="Fasta file name", label="Fasta file name")
-                text_button = gr.Button("Create Fasta file")
-                text_button.click(fn=create_fasta_file, inputs=[text_input], outputs=[text_output])
-                
+                fasta_input = gr.Textbox(placeholder="Fasta format sequences", label="Fasta content", lines=10)
+                fasta_output = gr.Textbox(placeholder="Fasta file name", label="Fasta file name")
+                fasta_button = gr.Button("Create Fasta file")
+                fasta_button.click(fn=create_fasta_file, inputs=[fasta_input], outputs=[fasta_output])
+                        
                 gr.Markdown(
                 """
                 ## Example Fasta File
@@ -305,13 +315,51 @@ with gr.Blocks(theme=theme) as demo:
                 ```
                 """)
         
+        gr.Markdown(
+        """        
+        ## Simulation parameters choice       
+        If no config or fasta files are created, default values are chosen:
+        - chai1_default_input.fasta
+        - chai1_quick_inference.json
+        
+        The files content is diplayed at the bottom of the page.
+        The default json configuration makes the computation fast (about 2min) but results can be disappointing. 
+        Please use chai1_default_inference.json to have a wonderful protein 😃.
+        """)
+        
+        inp1 = gr.Textbox(placeholder="Fasta Sequence file (default: chai1_default_input.fasta)", label="Input Fasta file")
+        inp2 = gr.Textbox(placeholder="Config file (default: chai1_quick_inference.json)", label="JSON Config file")
        
-    with gr.Tab("Run folding simulation 🚀"): 
-        inp1 = gr.Textbox(placeholder="Fasta Sequence file", label="Input Fasta file")
-        inp2 = gr.Textbox(placeholder="Config file", label="JSON Config file")
+        gr.Markdown(
+        """        
+        - chai1_default_input.fasta
+        ```
+        >protein|name=example-of-long-protein
+        AGSHSMRYFSTSVSRPGRGEPRFIAVGYVDDTQFVRFDSDAASPRGEPRAPWVEQEGPEYWDRETQKYKRQAQTDRVSLRNLRGYYNQSEAGSHTLQWMFGCDLGPDGRLLRGYDQSAYDGKDYIALNEDLRSWTAADTAAQITQRKWEAAREAEQRRAYLEGTCVEWLRRYLENGKETLQRAEHPKTHVTHHPVSDHEATLRCWALGFYPAEITLTWQWDGEDQTQDTELVETRPAGDGTFQKWAAVVVPSGEEQRYTCHVQHEGLPEPLTLRWEP
+        >protein|name=example-of-short-protein
+        AIQRTPKIQVYSRHPAENGKSNFLNCYVSGFHPSDIEVDLLKNGERIEKVEHSDLSFSKDWSFYLLYYTEFTPTEKDEYACRVNHVTLSQPKIVKWDRDM
+        >protein|name=example-peptide
+        GAAL
+        >ligand|name=example-ligand-as-smiles
+        CCCCCCCCCCCCCC(=O)O
+        ```
+        - chai1_quick_inference.json
+        ```json
+        {
+            "num_trunk_recycles": 1,
+            "num_diffn_timesteps": 10,
+            "seed": 42,
+            "use_esm_embeddings": true
+            "use_msa_server": false
+        }
+        ```
+        """)
+       
+    with gr.Tab("Run folding simulation 🚀"):                   
         btn = gr.Button("Run")
-        out = Molecule3D(label="Molecule3D", reps=reps)
+        out = Molecule3D(label="Plot the 3D Molecule", reps=reps)
         btn.click(fn=compute_Chai1, inputs=[inp1 , inp2], outputs=[out])
+        
 
 # Launch both the Gradio web interface and the MCP server
 if __name__ == "__main__":
