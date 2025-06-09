@@ -1,6 +1,5 @@
 # Specifics
-results/molecules/
-results/score/
+inputs/
 mcp.json
 
 # Byte-compiled / optimized / DLL files
