@@ -69,7 +69,7 @@ def create_fasta_file(sequence: str, name: Optional[str] = None, seq_name: Optio
     Args:
         sequence (str): The protein sequence string with optional line breaks
         name (str, optional): Name to use for the FASATA file. If not provided, a unique ID will be generated
-        seq_name (str, optional): The name/identifier for the sequence. Defaults to "PROTEIN"
+        seq_name (str, optional): The name/identifier for the sequence. Defaults to "protein"
         
     
     Returns:
@@ -82,7 +82,7 @@ def create_fasta_file(sequence: str, name: Optional[str] = None, seq_name: Optio
     if not lines[0].startswith('>'):
         # If no header provided, add one
         if seq_name is None:
-            seq_name = "PROTEIN"
+            seq_name = "protein"
         sequence = f">{seq_name}\n{sequence}"
     
     # Create FASTA content (preserving line breaks)
