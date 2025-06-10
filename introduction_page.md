@@ -68,6 +68,12 @@ CCCCCCCCCCCCCC(=O)O
 MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPDLNAAKSELDKAIGRNCNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRCAAINQVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPDRAKRVITTFRTGTWDAYKNL
 ```
 
+```fasta
+>rna|Chain B
+UUAGGCGGCCACAGCGGUGGGGUUGCCUCCCGUACCCAUCCCGAACACGGAAGAUAAGCCCACCAGCGUUCCGGGGAGUACUGGAGUGCGCGAGCCUCUGGGAAACCCGGUUCGCCGCCACC
+MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPDLNAAKSELDKAIGRNCNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRCAAINQVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPDRAKRVITTFRTGTWDAYKNL
+```
+
 </div>
 
 ### 3. <span style="color:#e98935;">Select your config and FASTA files</span>
@@ -77,7 +83,7 @@ In the `Run folding simulation 🚀` window, refresh the file list by clicking o
 
 ### 4. <span style="color:#e98935;">Run the simulation</span>
 
-Press the `Run Simulation` button to start de folding Simulation. Five proteins folding simulations will be performed. This parameter is hard coded in Chai-1. The simulation time is expected to be from 2min to 10min depending on the molecule.
+Press the `Run Simulation` button to start the folding simulation. Five biomolecules folding simulations will be performed. This parameter is hard coded in Chai-1. The simulation time is expected to be from 2min to 10min depending on the molecule.
 
 ### 5. <span style="color:#e98935;">Analyse the results of your simulation</span>
 

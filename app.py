@@ -64,7 +64,7 @@ def select_best_model(
 # Definition of the tools for the MCP server 
 # Function to return a fasta file
 def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: Optional[str] = None) -> str:
-    """Create a FASTA file from a protein sequence string with a unique name.
+    """Create a FASTA file from a biomolecule sequence string with a unique name.
     
     Args:
         file_content (str): The content of the FASTA file required with optional line breaks
@@ -232,7 +232,7 @@ def compute_Chai1(
 
 # Function to plot the 3D protein structure
 def plot_protein(result_df) -> str:
-    """Plot the 3D structure of a protein using the DataFrame from compute_Chai1.
+    """Plot the 3D structure of a biomolecule using the DataFrame from compute_Chai1.
 
     Args:
         result_df (pd.DataFrame): DataFrame containing model information and scores
@@ -262,7 +262,7 @@ def show_cif_file(cif_file):
     """Plot a 3D structure from a CIF file with the Molecule3D library.
 
     Args:
-        cif_file: A protein structure file in CIF format. This can be a file uploaded by the user.
+        cif_file: A biomolecule structure file in CIF format. This can be a file uploaded by the user.
             If None, the function will return None.
 
     Returns:
@@ -288,7 +288,7 @@ with gr.Blocks(theme=theme) as demo:
     gr.Markdown(
     """
     # Protein Folding Simulation Interface
-    This interface provides the tools to fold FASTA chains based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
+    This interface provides the tools to fold FASTA chains based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding biomolecules with LLMs.     
     """) 
     
     with gr.Tab("Introduction 🔭"):
@@ -306,13 +306,13 @@ with gr.Blocks(theme=theme) as demo:
 
         # Objective
 
-        This project represents an initial step towards developing AI agents that can perform simulations using existing engineering softwares. 
+        This project represents a first step towards developing AI agents that can perform simulations using existing engineering softwares. 
         Key domains of application include:
         - **CFD** (Computational Fluid Dynamics) simulations
         - **Biology** (Protein Folding, Molecular Dynamics, etc.)
         - **Neural network applications**
 
-        While this project focuses on protein folding, the principles employed can be extended to other domains. 
+        While this project focuses on biomolecules folding, the principles employed can be extended to other domains. 
         Specifically, it utilizes [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), a multi-modal foundation model for molecular structure prediction that achieves state-of-the-art performance across various benchmarks. 
         Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. 
 
@@ -327,7 +327,7 @@ with gr.Blocks(theme=theme) as demo:
 
         3. **Integration**: The seamless integration between the LLM's chat interface and the MCP server allows for a streamlined workflow, from simulation setup to results analysis.
         
-        The following video illustrates a practical use of the MCP server to run a protein folding simulation using the Chai-1 model. 
+        The following video illustrates a practical use of the MCP server to run a biomolecule folding simulation using the Chai-1 model. 
         In this scenario, Copilot is used in Agent mode with Claude 3.5 Sonnet to leverage the tools provided by the MCP server.
 
         """
@@ -349,10 +349,10 @@ with gr.Blocks(theme=theme) as demo:
         gr.Markdown(
         """
         # MCP tools
-        1. `create_fasta_file`: Create a FASTA file from a protein sequence string with a unique name.
+        1. `create_fasta_file`: Create a FASTA file from a biomolecule sequence string with a unique name.
         2. `create_json_config`: Create a JSON configuration file from the Gradio interface inputs.
         3. `compute_Chai1`: Compute a Chai-1 simulation on Modal labs server. Return a DataFrame with protein scores.
-        4. `plot_protein`: Plot the 3D structure of a protein using the DataFrame from `compute_Chai1` (Use for Gradio interface).
+        4. `plot_protein`: Plot the 3D structure of a biomolecule using the DataFrame from `compute_Chai1` (Use for Gradio interface).
         5. `show_cif_file`: Plot a 3D structure from a CIF file with the Molecule3D library (Use for the Gradio interface).
         """)
         
