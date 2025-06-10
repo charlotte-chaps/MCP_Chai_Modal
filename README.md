@@ -33,11 +33,15 @@ Key domains of application include:
 - **Neural network applications**
 
 While this project focuses on biomolecules folding, the principles employed can be extended to other domains. 
-Specifically, it utilizes [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), a multi-modal foundation model for molecular structure prediction that achieves state-of-the-art performance across various benchmarks. 
+Specifically, it uses [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), a multi-modal foundation model for molecular structure prediction that achieves state-of-the-art performance across various benchmarks. 
 Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. 
 
-Industrial computations are frequently performed on High-Performance Computing (HPC) clusters with substantial resources, necessitating that simulations typically run on separate servers. 
-To provide comprehensive answers to users, the LLM must be able to access simulation results. To this end, [Modal Labs](https://modal.com/), a serverless platform that offers a straightforward method to run any application with the latest CPU and GPU hardware, will be used.
+Industrial computations frequently require substantial resources (large number of CPUs and GPUs) that are performed on High-Performance Computing (HPC) clusters. 
+To this end, [Modal Labs](https://modal.com/), a serverless platform that offers a straightforward method to run any application with the latest CPU and GPU hardware, will be used.
+        
+MCP servers are an efficient solution to connect LLMs to real world engineering applications by providing access to a set of tools. 
+The purpose of this project is to enable users to run biomolecule folding simulations using the Chai-1 model through any LLM chat or with a Gradio interface.
+                
 
 # Benefits
 
@@ -66,7 +70,7 @@ The simulation was run with the default configuration and the image is 3D view f
 
  # What's next?
 1. Expose additional tools to post-process the results of the simulations. 
-The current post-processong tools are suited for the Gradio interface (ex: Plot images of the molecule structure from a file).
+The current post-processing tools are suited for the Gradio interface (ex: Plot images of the molecule structure from a file).
 2. Continue the pipeline by adding softawres like [OpenMM](https://openmm.org/) or [Gromacs](https://www.gromacs.org/) for molecular dynamics simulations.
 3. Perform complete simulation plans including loops over parameters fully automated by the LLM.
 
@@ -183,4 +187,3 @@ To analyse the results of the simulation, two outputs are provided:
 - Interactive 3D visualization of the molecule
 
 Finally, you can get to the `Plot CIF file 💻` window to watch the cif files. This is mainly used to visualize CIF files after using this tool as an MCP server.
-
