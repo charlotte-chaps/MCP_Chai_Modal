@@ -377,7 +377,7 @@ with gr.Blocks(theme=theme) as demo:
         # What's next?
         1. Expose additional tools to post-process the results of the simulations (ex: Plot images of the molecule structure from a file). 
         The current post-processing tools are suited for the Gradio interface.
-        2. Continue the pipeline by adding softawres like [OpenMM](https://openmm.org/) or [Gromacs](https://www.gromacs.org/) for molecular dynamics simulations.
+        2. Continue the pipeline by adding software like [OpenMM](https://openmm.org/) or [Gromacs](https://www.gromacs.org/) for molecular dynamics simulations.
         3. Perform full simulation plans including loops over parameters fully automated by the LLM.
         
         # Contact

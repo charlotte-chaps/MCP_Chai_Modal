@@ -11,7 +11,7 @@ license: apache-2.0
 short_description: MCP server to simulate protein folding on Modal cluster
 tags: 
    - mcp-server-track
-   - Modal Labs Choice Award
+   - Modal
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
