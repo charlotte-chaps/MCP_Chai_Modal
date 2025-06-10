@@ -60,7 +60,7 @@ CCCCCCCCCCCCCC(=O)O
 </div>
 <small>For a peptide, use `protein` as the molecule type.</small>
 
-**Other example:**
+**Other examples:**
 <div style="background-color:#ffffff; border-radius:8px; padding:18px 24px; margin-bottom:24px; border:1px solid #cccccc;">
 
 ```fasta
