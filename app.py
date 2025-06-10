@@ -95,7 +95,10 @@ def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: O
     
     # Generate a unique file name
     unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"{name if name else "chai1_"+unique_id+".fasta"}"
+    if name:
+        file_name = name
+    else:
+        file_name = f"chai1_{unique_id}.fasta"
     file_path = here / "inputs/fasta" / file_name
     
     # Write the FASTA file
@@ -137,7 +140,11 @@ def create_json_config(
     }
     
     # Generate file name based on provided name or unique ID
-    file_name = f"{name if name else "chai1_"+hashlib.sha256(uuid4().bytes).hexdigest()[:8]+".json"}"
+    unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
+    if name:
+        file_name = name
+    else:
+        file_name = f"chai1_{unique_id}.json"
     file_path = here / "inputs/config" / file_name
     
     # Write the JSON file 
@@ -249,6 +256,7 @@ def plot_protein(result_df) -> str:
     
     return pdb_file
 
+
 # Function to plot a CIF file
 def show_cif_file(cif_file):
     """Plot a 3D structure from a CIF file with the Molecule3D library.
@@ -271,6 +279,7 @@ def show_cif_file(cif_file):
     
     return str(pdb_file)
 
+
 # Create the Gradio interface
 reps = [{"model": 0,"style": "cartoon","color": "hydrophobicity"}]
 
@@ -279,29 +288,47 @@ with gr.Blocks(theme=theme) as demo:
     gr.Markdown(
     """
     # Protein Folding Simulation Interface
-    This interface provides the tools to fold any FASTA chain based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
+    This interface provides the tools to fold FASTA chains based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
     """) 
     
     with gr.Tab("Introduction 🔭"):
         
-        gr.Image("images/logo1.png", show_label=False, width=600, show_download_button=False, show_fullscreen_button=False)
+        gr.Image("images/logo1.png", show_label=False, width=600, show_download_button=False, show_fullscreen_button=False, show_share_button=False)
         
         gr.Markdown(
         """
         # Stakes
 
-        The industry is being deeply changed by the development of LLMs and the recent possibilities to provide them access to external tools. For years, companies have used simulation tools to accelerate and reduce the cost of product development. One of the main challenges in the coming years will be to create agents that can set up, run, and process simulations to further accelerate innovation.
+        The industry is undergoing a profound transformation due to the development of Large Language Models (LLMs) and the recent advancements that enable them to access external tools. 
+        For years, companies have leveraged simulation tools to accelerate and reduce the costs of product development. 
+        One of the primary challenges in the coming years will be to create agents capable of setting up, running, and processing simulations to further expedite innovation.
+        Engineers will focus on analysis rather than simulation setup, allowing them to concentrate on the most critical aspects of their work.
 
         # Objective
 
-        This project is a first step in creating AI agents that perform simulations on existing software. Key domains include:
+        This project represents an initial step towards developing AI agents that can perform simulations using existing engineering softwares. 
+        Key domains of application include:
         - **CFD** (Computational Fluid Dynamics) simulations
         - **Biology** (Protein Folding, Molecular Dynamics, etc.)
         - **Neural network applications**
 
-        This project focuses on protein folding, but the same principles can be applied to other domains. In particular it uses [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), which is a multi-modal foundation model for molecular structure prediction, performing at state-of-the-art levels across a variety of benchmarks. Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. Using Chai-1 on Modal is a great example of running folding simulations.
+        While this project focuses on protein folding, the principles employed can be extended to other domains. 
+        Specifically, it utilizes [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), a multi-modal foundation model for molecular structure prediction that achieves state-of-the-art performance across various benchmarks. 
+        Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. 
 
-        Industrial computations are often performed on HPC clusters with large resources, so simulations typically run on separate servers. The LLM must be able to access simulation results to provide complete answers to users. To this purpose, [Modal](https://modal.com/), a serverless platform that provides a simple way to run any application with the latest CPU and GPU hardware will be used.
+        Industrial computations are frequently performed on High-Performance Computing (HPC) clusters with substantial resources, necessitating that simulations typically run on separate servers. 
+        To provide comprehensive answers to users, the LLM must be able to access simulation results. To this end, [Modal Labs](https://modal.com/), a serverless platform that offers a straightforward method to run any application with the latest CPU and GPU hardware, will be used.
+        
+        # Benefits
+
+        1. **Efficiency**: The MCP server's connected to high-performance computing capabilities ensure that simulations are run quickly and efficiently.
+
+        2. **Ease of Use**: Only provide necessary parameters to the user to simplify the process of setting up and running complex simulations.
+
+        3. **Integration**: The seamless integration between the LLM's chat interface and the MCP server allows for a streamlined workflow, from simulation setup to results analysis.
+        
+        The following video illustrates a practical use of the MCP server to run a protein folding simulation using the Chai-1 model. 
+        In this scenario, Copilot is used in Agent mode with Claude 3.5 Sonnet to leverage the tools provided by the MCP server.
 
         """
         )
@@ -319,6 +346,16 @@ with gr.Blocks(theme=theme) as demo:
             label="MCP demonstration video"
         )
         
+        gr.Markdown(
+        """
+        # MCP tools
+        1. `create_fasta_file`: Create a FASTA file from a protein sequence string with a unique name.
+        2. `create_json_config`: Create a JSON configuration file from the Gradio interface inputs.
+        3. `compute_Chai1`: Compute a Chai-1 simulation on Modal labs server. Return a DataFrame with protein scores.
+        4. `plot_protein`: Plot the 3D structure of a protein using the DataFrame from `compute_Chai1` (Use for Gradio interface).
+        5. `show_cif_file`: Plot a 3D structure from a CIF file with the Molecule3D library (Use for the Gradio interface).
+        """)
+        
         with open("introduction_page.md", "r") as f:
             intro_md = f.read()
         gr.Markdown(intro_md)
@@ -330,10 +367,16 @@ with gr.Blocks(theme=theme) as demo:
         The simulation was run with the default configuration and the image is 3D view from the Gradio interface.
         """)    
         
-        gr.Image("images/protein.png", show_label=True, width=400, label="Protein Folding example", show_download_button=False, show_fullscreen_button=False)
+        gr.Image("images/protein.png", show_label=True, width=400, label="Protein Folding example", show_download_button=False, show_fullscreen_button=False, show_share_button=False)
     
         gr.Markdown(
         """
+        # What's next?
+        1. Expose additional tools to post-process the results of the simulations. 
+        The current post-processong tools are suited for the Gradio interface (ex: Plot images of the molecule structure from a file).
+        2. Continue the pipeline by adding softawres like [OpenMM](https://openmm.org/) or [Gromacs](https://www.gromacs.org/) for molecular dynamics simulations.
+        3. Perform complete simulation plans including loops over parameters fully automated by the LLM.
+        
         # Contact
         For any issues or questions, please contact the developer or refer to the documentation.
         """)    
@@ -377,7 +420,7 @@ with gr.Blocks(theme=theme) as demo:
         with gr.Row():                
             with gr.Column(scale=1):
                 inp2 = gr.FileExplorer(root_dir=here / "inputs/config", 
-                                value="chai1_quick_inference.json",
+                                value="chai1_default_inference.json",
                                 label="Configuration file", 
                                 file_count='single')    
                 
@@ -415,7 +458,7 @@ with gr.Blocks(theme=theme) as demo:
         )
     
     
-    with gr.Tab("Show molecule from a CIF file 💻"):     
+    with gr.Tab("Plot CIF file 💻"):     
         
         gr.Markdown(
         """
