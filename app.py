@@ -95,7 +95,10 @@ def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: O
     
     # Generate a unique file name
     unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"{name if name else "chai1_"+unique_id+".fasta"}"
+    if name:
+        file_name = name
+    else:
+        file_name = f"chai1_{unique_id}.fasta"
     file_path = here / "inputs/fasta" / file_name
     
     # Write the FASTA file
@@ -137,7 +140,11 @@ def create_json_config(
     }
     
     # Generate file name based on provided name or unique ID
-    file_name = f"{name if name else "chai1_"+hashlib.sha256(uuid4().bytes).hexdigest()[:8]+".json"}"
+    unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
+    if name:
+        file_name = name
+    else:
+        file_name = f"chai1_{unique_id}.json"
     file_path = here / "inputs/config" / file_name
     
     # Write the JSON file 
