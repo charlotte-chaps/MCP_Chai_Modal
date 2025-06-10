@@ -293,7 +293,7 @@ with gr.Blocks(theme=theme) as demo:
     
     with gr.Tab("Introduction 🔭"):
         
-        gr.Image("images/logo1.png", show_label=False, width=600, show_download_button=False, show_fullscreen_button=False)
+        gr.Image("images/logo1.png", show_label=False, width=600, show_download_button=False, show_fullscreen_button=False, show_share_button=False)
         
         gr.Markdown(
         """
@@ -367,7 +367,7 @@ with gr.Blocks(theme=theme) as demo:
         The simulation was run with the default configuration and the image is 3D view from the Gradio interface.
         """)    
         
-        gr.Image("images/protein.png", show_label=True, width=400, label="Protein Folding example", show_download_button=False, show_fullscreen_button=False)
+        gr.Image("images/protein.png", show_label=True, width=400, label="Protein Folding example", show_download_button=False, show_fullscreen_button=False, show_share_button=False)
     
         gr.Markdown(
         """
