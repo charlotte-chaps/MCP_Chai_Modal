@@ -286,6 +286,33 @@ with gr.Blocks(theme=theme) as demo:
         
         gr.Image("images/logo1.png", show_label=False,width=400)
         
+        gr.Markdown(
+        """
+        # Stakes
+
+        The industry is being deeply changed by the development of LLMs and the recent possibilities to provide them access to external tools. For years, companies have used simulation tools to accelerate and reduce the cost of product development. One of the main challenges in the coming years will be to create agents that can set up, run, and process simulations to further accelerate innovation.
+
+        # Objective
+
+        This project is a first step in creating AI agents that perform simulations on existing software. Key domains include:
+        - **CFD** (Computational Fluid Dynamics) simulations
+        - **Biology** (Protein Folding, Molecular Dynamics, etc.)
+        - **Neural network applications**
+
+        This project focuses on protein folding, but the same principles can be applied to other domains. In particular it uses [Chai-1](https://www.chaidiscovery.com/blog/introducing-chai-1), which is a multi-modal foundation model for molecular structure prediction, performing at state-of-the-art levels across a variety of benchmarks. Chai-1 enables unified prediction of proteins, small molecules, DNA, RNA, glycosylations, and more. Using Chai-1 on Modal is a great example of running folding simulations.
+
+        Industrial computations are often performed on HPC clusters with large resources, so simulations typically run on separate servers. The LLM must be able to access simulation results to provide complete answers to users. To this purpose, [Modal](https://modal.com/), a serverless platform that provides a simple way to run any application with the latest CPU and GPU hardware will be used.
+
+        """
+        )
+        
+        gr.HTML(
+            """<iframe width="600" height="338" 
+            src="https://www.youtube.com/embed/P9cAKxJ9Zh8" 
+            frameborder="0" allowfullscreen></iframe>""",
+            label="MCP demonstration video"
+        )
+        
         with open("introduction_page.md", "r") as f:
             intro_md = f.read()
         gr.Markdown(intro_md)
