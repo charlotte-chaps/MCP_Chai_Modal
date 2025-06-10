@@ -16,6 +16,7 @@ tags:
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 
+![Logo project](images/logo1.png)
 
 # Stakes
 The industry is undergoing a profound transformation due to the development of Large Language Models (LLMs) and the recent advancements that enable them to access external tools. 
@@ -70,7 +71,7 @@ The current post-processong tools are suited for the Gradio interface (ex: Plot 
 3. Perform complete simulation plans including loops over parameters fully automated by the LLM.
 
 # Contact
-For any issues or questions, please contact the developer or refer to the documentation.>
+For any issues or questions, please contact the developer or refer to the documentation.
 
 
 # Environment creation with uv
@@ -81,11 +82,20 @@ source .venv/bin/activate
 uv pip install gradio[mcp] modal gemmi gradio_molecule3d 
 ```
 
+# Connect to Modal
+Create an account on Modal [website](https://modal.com) and run in your local terminal:
+```
+python -m modal setup
+```
+
+
 # Run the app 
 Run in a bash shell: 
 ```bash
 gradio app.py
 ```
+
+
 
 # Gradio interface instructions
 
