@@ -95,7 +95,7 @@ def create_fasta_file(file_content: str, name: Optional[str] = None, seq_name: O
     
     # Generate a unique file name
     unique_id = hashlib.sha256(uuid4().bytes).hexdigest()[:8]
-    file_name = f"{name if name else unique_id}"
+    file_name = f"{name if name else "chai1_"+unique_id+".fasta"}"
     file_path = here / "inputs/fasta" / file_name
     
     # Write the FASTA file
@@ -137,7 +137,7 @@ def create_json_config(
     }
     
     # Generate file name based on provided name or unique ID
-    file_name = f"{name if name else hashlib.sha256(uuid4().bytes).hexdigest()[:8]}"
+    file_name = f"{name if name else "chai1_"+hashlib.sha256(uuid4().bytes).hexdigest()[:8]+".json"}"
     file_path = here / "inputs/config" / file_name
     
     # Write the JSON file 
@@ -279,12 +279,12 @@ with gr.Blocks(theme=theme) as demo:
     gr.Markdown(
     """
     # Protein Folding Simulation Interface
-    This interface provides you the tools to fold any FASTA chain based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
+    This interface provides the tools to fold any FASTA chain based on Chai-1 model. Also, this is a MCP server to provide all the tools to automate the process of folding proteins with LLMs.     
     """) 
     
     with gr.Tab("Introduction 🔭"):
         
-        gr.Image("images/logo1.png", show_label=False,width=400)
+        gr.Image("images/logo1.png", show_label=False, width=600, show_download_button=False, show_fullscreen_button=False)
         
         gr.Markdown(
         """
@@ -307,7 +307,13 @@ with gr.Blocks(theme=theme) as demo:
         )
         
         gr.HTML(
-            """<iframe width="600" height="338" 
+            """<style> 
+                iframe { 
+                display: block; 
+                margin: 0 auto; 
+            } 
+            </style>
+            <iframe width="600" height="338" 
             src="https://www.youtube.com/embed/P9cAKxJ9Zh8" 
             frameborder="0" allowfullscreen></iframe>""",
             label="MCP demonstration video"
@@ -316,7 +322,22 @@ with gr.Blocks(theme=theme) as demo:
         with open("introduction_page.md", "r") as f:
             intro_md = f.read()
         gr.Markdown(intro_md)
+        
+        gr.Markdown(
+        """
+        # Result example
+        The following image shows an example of a protein folding simulation using the Chai-1 model. 
+        The simulation was run with the default configuration and the image is 3D view from the Gradio interface.
+        """)    
+        
+        gr.Image("images/protein.png", show_label=True, width=400, label="Protein Folding example", show_download_button=False, show_fullscreen_button=False)
     
+        gr.Markdown(
+        """
+        # Contact
+        For any issues or questions, please contact the developer or refer to the documentation.
+        """)    
+
     
     with gr.Tab("Configuration 📦"):
         
@@ -353,18 +374,18 @@ with gr.Blocks(theme=theme) as demo:
        
        
     with gr.Tab("Run folding simulation 🚀"):     
-        with gr.Row():
-            with gr.Column(scale=1):
-                inp1 = gr.FileExplorer(root_dir=here / "inputs/fasta", 
-                                value="chai1_default_input.fasta",
-                                label="Input Fasta file", 
-                                file_count='single')     
-                
+        with gr.Row():                
             with gr.Column(scale=1):
                 inp2 = gr.FileExplorer(root_dir=here / "inputs/config", 
                                 value="chai1_quick_inference.json",
                                 label="Configuration file", 
                                 file_count='single')    
+                
+            with gr.Column(scale=1):
+                inp1 = gr.FileExplorer(root_dir=here / "inputs/fasta", 
+                                value="chai1_default_input.fasta",
+                                label="Input Fasta file", 
+                                file_count='single')     
         btn_refresh = gr.Button("Refresh available files")
         
         # Only workaround I found to update the file explorer
@@ -394,7 +415,7 @@ with gr.Blocks(theme=theme) as demo:
         )
     
     
-    with gr.Tab("Show protein from a cif file 💻"):     
+    with gr.Tab("Show molecule from a CIF file 💻"):     
         
         gr.Markdown(
         """
